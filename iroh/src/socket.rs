@@ -1648,8 +1648,14 @@ impl Actor {
         #[cfg(not(target_family = "wasm"))]
         {
             let interfaces = self.local_interfaces_watcher.get();
-            interfaces.default_route_interface.is_some()
-                && (interfaces.have_v4 || interfaces.have_v6)
+            // An Android app cannot read the routing table, so netwatch never finds a
+            // default route there. Requiring one made every network change wait the
+            // full MAX_WAIT before QUIC was told about it.
+            #[cfg(target_os = "android")]
+            let has_route = true;
+            #[cfg(not(target_os = "android"))]
+            let has_route = interfaces.default_route_interface.is_some();
+            has_route && (interfaces.have_v4 || interfaces.have_v6)
         }
     }
 
